@@ -1,0 +1,6 @@
+{
+    "require": {
+        "smarty/smarty": "^5.5",
+        "agile-bm/ado-db": "^10.0"
+    }
+}

@@ -1,0 +1,19 @@
+{
+	"name" : "agile-bm/ado-db",
+	"description" : "This is a fork of adodb/adodb-php https://adodb.org/. ADOdb is a PHP database abstraction layer library",
+	"license" : [ "BSD-3-Clause", "LGPL-2.1-or-later" ],
+	"keywords" : [ "database", "abstraction", "layer", "library", "php" ],
+	"type": "library",
+	"require" : {
+		"php" : "^7.4 || ^8.0"
+	},
+
+	"require-dev" : {
+		"phpunit/phpunit": "^9.5"
+	},
+
+	"autoload" : {
+		"files" : ["adodb.inc.php"]
+	}
+
+}
