@@ -1,0 +1,41 @@
+<html>
+<head>
+    <title>Register</title>
+    <link rel="stylesheet" href="{$assets_url}/css/style.css">
+    <style>
+        .error { color: red; font-size: 0.8em; }
+        .flash-success { color: green; }
+        .flash-error { color: red; }
+    </style>
+</head>
+<body>
+<div id="register-app" v-cloak>
+    <h1>Register</h1>
+    <div v-if="flash" :class="'flash-' + flash.type">{{ flash.message }}</div>
+    <form method="post" action="register.php" @submit="submitForm">
+        <input type="hidden" name="csrf_token" :value="csrf_token">
+        <label>Username: <input type="text" v-model="formData.username" name="username"></label>
+        <span v-if="errors.username" class="error">{{ errors.username }}</span><br>
+        
+        <label>Email: <input type="email" v-model="formData.email" name="email"></label>
+        <span v-if="errors.email" class="error">{{ errors.email }}</span><br>
+        
+        <label>Password: <input type="password" v-model="formData.password" name="password"></label>
+        <span v-if="errors.password" class="error">{{ errors.password }}</span><br>
+        
+        <label>Confirm Password: <input type="password" v-model="formData.confirm_password" name="confirm_password"></label>
+        <span v-if="errors.confirm_password" class="error">{{ errors.confirm_password }}</span><br>
+        
+        <button type="submit">Register</button>
+    </form>
+    <p>Already have an account? <a href="login.php">Log in</a></p>
+</div>
+
+<script>
+    window.flash = {$flash|@json_encode|raw};
+    window.csrf_token = '{$csrf_token|escape:"javascript"}';
+</script>
+<script type="module" src="{$assets_url}/js/vue.global.js"></script>
+<script type="module" src="{$assets_url}/js/registerApp.js"></script>
+</body>
+</html>
