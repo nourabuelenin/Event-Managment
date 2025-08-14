@@ -6,8 +6,8 @@ use Smarty\Smarty;
 class MySmarty extends Smarty {
     public function __construct() {
         parent::__construct();
-        $this->setTemplateDir(__DIR__ . '/../templates/');
-        $this->setCompileDir(__DIR__ . '/../templates_c/');
+        $this->setTemplateDir(__DIR__ . '/../public/views/templates/');
+        $this->setCompileDir(__DIR__ . '/../public/views/templates_c/');
         $this->setConfigDir(__DIR__ . '/../configs/');
         $this->setCacheDir(__DIR__ . '/../cache/');
 
@@ -20,9 +20,8 @@ class MySmarty extends Smarty {
 }
 // Smarty
 $smarty = new MySmarty();
-
-// Assign common variables
 $smarty->assign('base_url', BASE_URL);
 $smarty->assign('assets_url', ASSETS_URL);
+$smarty->assign('views_url', VIEWS_URL);
 $smarty->assign('current_user', getCurrentUser($db));
 $smarty->assign('csrf_token', $_SESSION['csrf_token']);
