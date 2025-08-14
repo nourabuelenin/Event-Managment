@@ -1,60 +1,72 @@
 <?php
+class Event extends ADODB_Active_Record {
+    public $_table = 'events';
+    public $_primarykey = 'id';
+}
+
 class EventModel {
     private $db;
-
+    // private $event;
     public function __construct($db) {
         $this->db = $db;
+        // $this->event = new Event(); // Initialize Event Active Record
     }
 
-    // CREATE
     public function createEvent($data) {
-        $sql = "INSERT INTO events (name, description, start_time, end_time, venue_id, organizer_id)
-                VALUES (?, ?, ?, ?, ?, ?)";
-        return $this->db->Execute($sql, [
-            $data['name'],
-            $data['description'],
-            $data['start_time'],
-            $data['end_time'],
-            $data['venue_id'] ?: null,
-            $data['organizer_id']
-        ]);
+        $event = new Event();
+        $event->name = $data['name'];
+        $event->description = $data['description'];
+        $event->start_time = $data['start_time'];
+        $event->end_time = $data['end_time'];
+        $event->venue_id = $data['venue_id'] ?: null;
+        $event->organizer_id = $data['organizer_id'];
+        return $event->Save();
     }
 
-    // READ (all events)
     public function getAllEvents() {
-        $sql = "SELECT e.*, v.name AS venue_name, u.username AS organizer_name
-                FROM events e
-                LEFT JOIN venues v ON e.venue_id = v.id
-                JOIN users u ON e.organizer_id = u.id
-                ORDER BY start_time DESC";
-        return $this->db->GetAll($sql);
+        $event = new Event();
+        $events = $event->Find('1=1', [], 'start_time DESC');
+        foreach ($events as &$evt) {
+            $evt->venue_name = $this->db->GetOne("SELECT name FROM venues WHERE id = ?", [$evt->venue_id]) ?: 'N/A';
+            $evt->organizer_name = $this->db->GetOne("SELECT username FROM users WHERE id = ?", [$evt->organizer_id]);
+        }
+        return $events;
     }
 
-    // READ (single event)
+    public function getRecentEvents($limit = 5) {
+        $event = new Event();
+        return $event->Find('start_time >= NOW()', [], 'start_time ASC', $limit);
+    }
+
     public function getEventById($id) {
-        $sql = "SELECT * FROM events WHERE id = ?";
-        return $this->db->GetRow($sql, [$id]);
+        $event = new Event();
+        if ($event->Load('id = ?', [$id])) {
+            $event->venue_name = $this->db->GetOne("SELECT name FROM venues WHERE id = ?", [$event->venue_id]) ?: 'N/A';
+            $event->organizer_name = $this->db->GetOne("SELECT username FROM users WHERE id = ?", [$event->organizer_id]);
+            return $event;
+        }
+        return false;
     }
 
-    // UPDATE
     public function updateEvent($id, $data) {
-        $sql = "UPDATE events
-                SET name = ?, description = ?, start_time = ?, end_time = ?, venue_id = ?, organizer_id = ?
-                WHERE id = ?";
-        return $this->db->Execute($sql, [
-            $data['name'],
-            $data['description'],
-            $data['start_time'],
-            $data['end_time'],
-            $data['venue_id'] ?: null,
-            $data['organizer_id'],
-            $id
-        ]);
+        $event = new Event();
+        if ($event->Load('id = ?', [$id])) {
+            $event->name = $data['name'];
+            $event->description = $data['description'];
+            $event->start_time = $data['start_time'];
+            $event->end_time = $data['end_time'];
+            $event->venue_id = $data['venue_id'] ?: null;
+            $event->organizer_id = $data['organizer_id'];
+            return $event->Save();
+        }
+        return false;
     }
 
-    // DELETE
     public function deleteEvent($id) {
-        $sql = "DELETE FROM events WHERE id = ?";
-        return $this->db->Execute($sql, [$id]);
+        $event = new Event();
+        if ($event->Load('id = ?', [$id])) {
+            return $event->Delete();
+        }
+        return false;
     }
 }
