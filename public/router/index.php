@@ -1,0 +1,58 @@
+<?php
+require_once __DIR__ . '/../../config/config.php';
+
+require_once __DIR__ . '/../../app/controllers/HomeController.php';
+require_once __DIR__ . '/../../app/controllers/UserController.php';
+require_once __DIR__ . '/../../app/controllers/EventController.php';
+
+// Routes
+$routes = [
+    ''                   => ['controller' => 'HomeController',  'method' => 'index'],
+    'home'               => ['controller' => 'HomeController',  'method' => 'index'],
+    'register'           => ['controller' => 'UserController',  'method' => 'register'],
+    'login'              => ['controller' => 'UserController',  'method' => 'login'],
+    'logout'             => ['controller' => 'UserController',  'method' => 'logout'],
+
+    // pages
+    'events'             => ['controller' => 'EventController', 'method' => 'index'],
+    'events/create'      => ['controller' => 'EventController', 'method' => 'create'],
+    // 'events/update/(\d+)' => ['controller'=>'EventController','method'=>'update','params'=>['id'=>1]],
+    // 'events/delete/(\d+)' => ['controller'=>'EventController','method'=>'delete','params'=>['id'=>1]],
+
+    // api
+    'api/events'         => ['controller' => 'EventController', 'method' => 'apiList'],
+    'api/events/view'    => ['controller' => 'EventController', 'method' => 'apiView'],   // ?id=...
+    'api/events/create'  => ['controller' => 'EventController', 'method' => 'apiCreate'],
+    'api/events/update'  => ['controller' => 'EventController', 'method' => 'apiUpdate'], // ?id=...
+    'api/events/delete'  => ['controller' => 'EventController', 'method' => 'apiDelete'], // ?id=...
+];
+
+// Resolve path
+$requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$path = str_replace('/test/public/router', '', $requestUri);
+$path = trim($path, '/');
+
+// Dispatch
+$matched = false;
+foreach ($routes as $pattern => $route) {
+    if (preg_match("#^$pattern$#", $path, $matches)) {
+        $controllerName = $route['controller'];
+        $method         = $route['method'];
+        $controller     = new $controllerName($db, $smarty);
+
+        if (isset($route['params'])) {
+            foreach ($route['params'] as $key => $idx) {
+                $_GET[$key] = $matches[$idx];
+            }
+        }
+        $controller->$method();
+        $matched = true;
+        break;
+    }
+}
+
+if (!$matched) {
+    http_response_code(404);
+    $smarty->assign('flash', ['message' => 'Page not found.', 'type' => 'error']);
+    $smarty->display('base.tpl');
+}
