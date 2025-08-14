@@ -1,35 +1,26 @@
-<html>
-<head>
-    <title>Login</title>
-    <link rel="stylesheet" href="{$assets_url}/css/style.css">
-    <style>
-        .error { color: red; font-size: 0.8em; }
-        .flash-success { color: green; }
-        .flash-error { color: red; }
-    </style>
-</head>
-<body>
+{extends file='base.tpl'}
+
+{block name="title"}Login{/block}
+
+{block name="content"}
 <div id="login-app" v-cloak>
     <h1>Login</h1>
-    <div v-if="flash" :class="'flash-' + flash.type">{{ flash.message }}</div>
-    <form method="post" action="login.php" @submit="submitForm">
+    <form method="post" action="{$base_url}/login">
         <input type="hidden" name="csrf_token" :value="csrf_token">
         <label>Username: <input type="text" v-model="formData.username" name="username"></label>
         <span v-if="errors.username" class="error">{{ errors.username }}</span><br>
-        
         <label>Password: <input type="password" v-model="formData.password" name="password"></label>
         <span v-if="errors.password" class="error">{{ errors.password }}</span><br>
-        
         <button type="submit">Login</button>
     </form>
-    <p>Don't have an account? <a href="register.php">Register</a></p>
+    <p>Don't have an account? <a href="{$base_url}/register">Register</a></p>
 </div>
+{/block}
 
+{block name="scripts"}
 <script>
     window.flash = {$flash|@json_encode|raw};
     window.csrf_token = '{$csrf_token|escape:"javascript"}';
 </script>
-<script type="module" src="{$assets_url}/js/vue.esm-browser.js"></script>
-<script type="module" src="{$assets_url}/js/loginApp.js"></script>
-</body>
-</html>
+<script type="module" src="{$views_url}/js/loginApp.js"></script>
+{/block}

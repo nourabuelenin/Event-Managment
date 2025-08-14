@@ -1,20 +1,15 @@
-<html>
-<head>
-    <title>Events</title>
-    
-    <style>
-        .sortable:hover { cursor: pointer; background-color: #f0f0f0; }
-        .sort-asc::after { content: ' ↑'; }
-        .sort-desc::after { content: ' ↓'; }
-        .loading { opacity: 0.5; pointer-events: none; }
-    </style>
-</head>
-<body>
+{extends file='base.tpl'}
+
+{block name="title"}Events{/block}
+
+{block name="content"}
 <div id="event-list-app" v-cloak :class="{ 'loading': isLoading }">
     <h1>Event List</h1>
     <div>
         <input v-model="searchQuery" placeholder="Search events..." style="margin: 10px; padding: 5px;">
-        <a href="events_form.php">Create New Event</a>
+        {if $current_user.role == 'organizer' || $current_user.role == 'admin'}
+            <a href="{$base_url}/events/create">Create New Event</a>
+        {/if}
     </div>
     <table border="1">
         <tr>
@@ -32,17 +27,17 @@
             <td>{{ event.start_time }}</td>
             <td>{{ event.end_time }}</td>
             <td>
-                <a :href="'events_form.php?id=' + event.id">Edit</a>
+                <a :href="'{$base_url}/events/update/' + event.id">Edit</a>
                 <a href="#" @click.prevent="deleteEvent(event.id)">Delete</a>
             </td>
         </tr>
     </table>
 </div>
+{/block}
 
+{block name="scripts"}
 <script>
     window.initialEvents = {$events|json_encode nofilter} || [];
 </script>
-<script type="module" src="https://unpkg.com/vue@3/dist/vue.esm-browser.js"></script>
-<script type="module" src="/test/public/assets/js/eventListApp.js"></script>
-</body>
-</html>
+<script type="module" src="{$views_url}/js/eventListApp.js"></script>
+{/block}
