@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../models/UserModel.php';
 
 function requireLogin() {
+    
     if (!isset($_SESSION['user_id'])) {
         setFlashMessage('Please log in to access this page.', 'error');
         header('Location: ' . BASE_URL . '/login');
@@ -23,13 +24,21 @@ function isAttendee() {
     return $user && $user['role'] === 'attendee';
 }
 
-function getCurrentUser($db = null) {
-    if (!isset($_SESSION['user_id'])) return null;
-    if ($db) {
-        $model = new UserModel($db);
-        return $model->getUserById($_SESSION['user_id']);
+function getCurrentUser() {
+    if (isset($_SESSION['user_id'])) {
+        $db = Database::getInstance(); // Use singleton
+        $userModel = new UserModel($db);
+        $user = $userModel->getUserById($_SESSION['user_id']);
+        if ($user) {
+            return [
+                'id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email,
+                'role' => $user->role
+            ];
+        }
     }
-    return ['id' => $_SESSION['user_id'], 'role' => $_SESSION['role']];
+    return false;
 }
 
 function setFlashMessage($message, $type = 'success') {
