@@ -7,7 +7,7 @@ require_once __DIR__ . '/Database.php';
 session_start(); // Required for authentication
 
 // Get database connection
-$db = Database::getInstance();
+// $db = Database::getInstance();
 
 // Error handling
 ini_set('display_errors', 1);

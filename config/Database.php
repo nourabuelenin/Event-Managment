@@ -28,6 +28,9 @@ class Database {
     public static function getInstance() {
         if (!isset(self::$instance)) {
             self::$instance = new Database();
+            // return self::$instance;
+        // } else {
+        //    echo "connection object could not be created again" . PHP_EOL;
         }
         return self::$instance->db;
     }
