@@ -1,9 +1,10 @@
 <?php
-require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../config/smarty_config.php';
 
-require_once __DIR__ . '/../../app/controllers/HomeController.php';
-require_once __DIR__ . '/../../app/controllers/UserController.php';
-require_once __DIR__ . '/../../app/controllers/EventController.php';
+require_once __DIR__ . '/../controllers/HomeController.php';
+require_once __DIR__ . '/../controllers/UserController.php';
+require_once __DIR__ . '/../controllers/EventController.php';
+require_once __DIR__ . '/../controllers/VenueController.php';
 
 // Routes
 $routes = [
@@ -15,16 +16,19 @@ $routes = [
 
     // pages
     'events'             => ['controller' => 'EventController', 'method' => 'index'],
+    'events/(\d+)' => ['controller' => 'EventController', 'method' => 'view', 'params' => ['id' => 1]],
     'events/create'      => ['controller' => 'EventController', 'method' => 'create'],
-    // 'events/update/(\d+)' => ['controller'=>'EventController','method'=>'update','params'=>['id'=>1]],
-    // 'events/delete/(\d+)' => ['controller'=>'EventController','method'=>'delete','params'=>['id'=>1]],
+    'events/update/(\d+)' => ['controller'=>'EventController','method'=>'update','params'=>['id'=>1]],
+    'events/delete/(\d+)' => ['controller'=>'EventController','method'=>'delete','params'=>['id'=>1]],
 
     // api
     'api/events'         => ['controller' => 'EventController', 'method' => 'apiList'],
-    'api/events/view'    => ['controller' => 'EventController', 'method' => 'apiView'],   // ?id=...
+    'api/venues'         => ['controller' => 'VenueController', 'method' => 'apiList'],
+
+    'api/events/(\d+)'    => ['controller' => 'EventController', 'method' => 'apiView', 'params' => ['id' => 1]],   // ?id=...
     'api/events/create'  => ['controller' => 'EventController', 'method' => 'apiCreate'],
-    'api/events/update'  => ['controller' => 'EventController', 'method' => 'apiUpdate'], // ?id=...
-    'api/events/delete'  => ['controller' => 'EventController', 'method' => 'apiDelete'], // ?id=...
+    'api/events/update/(\d+)'  => ['controller' => 'EventController', 'method' => 'apiUpdate','params'=>['id'=>1]], // ?id=...
+    'api/events/delete'  => ['controller' => 'EventController', 'method' => 'apiDelete' ,'params'=>['id'=>1]], // ?id=...
 ];
 
 // Resolve path
