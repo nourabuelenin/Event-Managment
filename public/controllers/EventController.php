@@ -8,7 +8,6 @@ class EventController {
     private $eventModel;
 
     public function __construct($db, $smarty) {
-        // $this->db = $db; // ✅ from index.php
         $this->db = Database::getInstance(); // Get singleton DB
         $this->smarty = $smarty;
         $this->eventModel = new EventModel($db); // ✅ pass DB to model
@@ -21,7 +20,7 @@ class EventController {
     public function index() {
         requireLogin();
         $events = $this->eventModel->getAllEvents();
-
+        // error_log("Events in index: " . print_r($events, true));
         if ($this->isAjax()) {
             header('Content-Type: application/json');
             echo json_encode($events);
@@ -40,12 +39,32 @@ class EventController {
         $event = $eventModel->getEventById($id);
         if (!$event) {
             setFlashMessage('Event not found.', 'error');
+            if ($this->isAjax()) {
+                header('Content-Type: application/json');
+                echo json_encode(['status' => 'error', 'message' => 'Event not found']);
+                exit;
+            }
             header('Location: ' . BASE_URL . '/events');
+            exit;
+        }
+        if ($this->isAjax()) {
+            header('Content-Type: application/json');
+            // Format the event data for JSON response
+            $eventData = [
+                'id' => $event->id,
+                'name' => $event->name,
+                'description' => $event->description,
+                'start_time' => $event->start_time,
+                'end_time' => $event->end_time,
+                'organizer_name' => $event->organizer_name ?? 'N/A',
+                'venue_name' => $event->venue_name ?? 'N/A'
+            ];
+            echo json_encode(['status' => 'success', 'data' => $eventData]);
             exit;
         }
         $this->smarty->assign('event', $event);
         $this->smarty->assign('flash', getFlashMessage());
-        $this->smarty->display('event_view.tpl');
+        // $this->smarty->display('event_view.tpl');
     }
 
     public function create() {
@@ -82,6 +101,15 @@ class EventController {
         $venues = $venueModel->getAllVenues();
         $this->smarty->assign('venues', $venues);
         $this->smarty->assign('flash', getFlashMessage());
+        // Assign a default event object
+        $this->smarty->assign('event', (object) [
+            'id' => null,
+            'name' => '',
+            'description' => '',
+            'start_time' => '',
+            'end_time' => '',
+            'venue_id' => null
+        ]);
         $this->smarty->display('events_form.tpl');
     }
 
@@ -136,11 +164,10 @@ class EventController {
         $id = $_GET['id'] ?? 0;
         $eventModel = new EventModel($this->db);
         if ($eventModel->deleteEvent($id)) {
-            setFlashMessage('Event deleted successfully.', 'success');
+            echo json_encode(['status' => 'success']);
         } else {
-            setFlashMessage('Failed to delete event.', 'error');
+            echo json_encode(['status' => 'error', 'message' => 'Failed to delete event']);
         }
-        header('Location: ' . BASE_URL . '/events');
         exit;
     }
 
@@ -153,17 +180,26 @@ class EventController {
     
     public function apiView() {
         requireLogin();
-        header('Content-Type: application/json');
         $id = $_GET['id'] ?? 0;
-        $events = $this->eventModel->getAllEvents();
-        $event = $events->getEventById($id);
-        if ($event) {
-            echo json_encode(['status' => 'success', 'data' => $event]);
-        } else {
-            http_response_code(404);
+        $eventModel = new EventModel($this->db);
+        $event = $eventModel->getEventById($id);
+        header('Content-Type: application/json');
+        if (!$event) {
             echo json_encode(['status' => 'error', 'message' => 'Event not found']);
+            exit;
         }
-    }
+        $eventData = [
+            'id' => $event->id,
+            'name' => $event->name,
+            'description' => $event->description,
+            'start_time' => $event->start_time,
+            'end_time' => $event->end_time,
+            'organizer_name' => $event->organizer_name ?? 'N/A',
+            'venue_name' => $event->venue_name ?? 'N/A'
+        ];
+        echo json_encode(['status' => 'success', 'data' => $eventData]);
+        exit;
+}
 
     public function apiCreate() {
         requireLogin();
@@ -194,5 +230,45 @@ class EventController {
             header('Content-Type: application/json');
             echo json_encode(['status' => 'error', 'message' => 'Failed to create event']);
         }
+    }
+
+    public function apiUpdate() {
+        requireLogin();
+        requireRole(['organizer', 'admin']);
+        $id = $_GET['id'] ?? 0;
+        $eventModel = new EventModel($this->db);
+        $event = $eventModel->getEventById($id);
+        if (!$event) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Event not found']);
+            return;
+        }
+
+        if (!isset($_SERVER['HTTP_X_CSRF_TOKEN']) || $_SERVER['HTTP_X_CSRF_TOKEN'] !== $_SESSION['csrf_token']) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Invalid CSRF token']);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $data = [
+            'name' => trim($input['name'] ?? ''),
+            'description' => trim($input['description'] ?? ''),
+            'start_time' => $input['start_time'] ?? '',
+            'end_time' => $input['end_time'] ?? '',
+            'venue_id' => $input['venue_id'] ?? null,
+            'organizer_id' => $_SESSION['user_id']
+        ];
+
+        if ($eventModel->updateEvent($id, $data)) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'success', 'message' => 'Event updated']);
+        } else {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Failed to update event']);
+        }        
     }
 }
