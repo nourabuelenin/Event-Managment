@@ -6,13 +6,15 @@ class HomeController {
     private $smarty;
 
     public function __construct($db, $smarty) {
-        $this->db = $db;
+        $this->db = Database::getInstance(); // Get singleton DB
+        // $this->db = $db;
         $this->smarty = $smarty;
     }
 
     public function index() {
         $eventModel = new EventModel($this->db);
         $events = $eventModel->getRecentEvents(5);
+        error_log("Events fetched: " . print_r($events, true));
         $this->smarty->assign('events', $events);
         $this->smarty->assign('flash', getFlashMessage());
         $this->smarty->display('home.tpl');
