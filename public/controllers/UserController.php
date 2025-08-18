@@ -6,8 +6,10 @@ class UserController {
     private $smarty;
 
     public function __construct($db, $smarty) {
-        $this->db = $db;
+        $this->db = Database::getInstance(); // Get singleton DB
+        // $this->db = $db;
         $this->smarty = $smarty;
+        // $this->userModel = new UserModel($db); // ✅ pass DB to model
     }
 
     public function register() {
@@ -57,7 +59,10 @@ class UserController {
             $username = trim($_POST['username'] ?? '');
             $password = $_POST['password'] ?? '';
 
-            if ($model->login($username, $password)) {
+            $user = $model->login($username, $password);
+            if ($user) {
+                $_SESSION['user_id'] = $user->id; // Set user ID
+                $_SESSION['role'] = $user->role;  // Set user role
                 setFlashMessage('Login successful!', 'success');
                 header('Location: ' . BASE_URL . '/home');
                 exit;
