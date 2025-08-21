@@ -5,13 +5,27 @@
 {block name="content"}
 <div id="event-list-app" v-cloak :class="{ 'loading': isLoading }">
     <h1>Event List</h1>
+    <div id="search-container">
+        <div class="search-input">
+            {* <input v-model="searchQuery" placeholder="Search events..." type="text"> *}
+            <input v-model="searchQuery.name" placeholder="Search events..." type="text">
+            <input v-model="searchQuery.venue_name" placeholder="Search venues..." type="text">
+            <input v-model="searchQuery.organizer_name" placeholder="Search organizers..." type="text">
+            <input type="datetime-local" v-model="searchQuery.start_time">
+        </div>
 
-    <div style="margin: 10px 0;">
-        <input v-model="searchQuery" placeholder="Search events..." style="padding: 6px; width: 250px;">
+        <div @click="search = !search" class="">
+            <button v-if="search" @click="fetchEvents">Search</button>
+            <button v-else @click="resetSearch">Reset Search</button>
+        </div>
+
+    </div>
+    <div class="create-event">
         {if $current_user && ($current_user.role == 'organizer' || $current_user.role == 'admin')}
-            <button @click="openCreate" style="margin-left: 10px;">Create New Event</button>
+            <button @click="openCreate" class="btn">Create New Event</button>
         {/if}
     </div>
+
 
     <table border="1" cellpadding="6" cellspacing="0" width="100%">
         <thead>
@@ -25,7 +39,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr v-for="event in filteredEvents" :key="event.id">
+            <tr v-for="event in sortedEvents" :key="event.id">
                 <td>{{ event.name }}</td>
                 <td>{{ event.venue_name || 'N/A' }}</td>
                 <td>{{ event.organizer_name }}</td>
@@ -37,18 +51,28 @@
                         &nbsp;|&nbsp;
                         <a href="#" @click.prevent="deleteEvent(event.id)">Delete</a>
                         &nbsp;|&nbsp;
+                    {elseif  $current_user && $current_user.role == 'attendee'}
+                        <a href="#" @click.prevent="registerEvent(event.id)">Register</a>
+                        &nbsp;|&nbsp;
                     {/if}
                         <a href="#" @click.prevent="openView(event.id)">View</a>
                 </td>
             </tr>
         </tbody>
     </table>
-
+    
+    <!-- Pagination Controls -->
+    <div v-if="totalItems > 0" class="pagination" style="margin-top: 20px; text-align: center;">
+        <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" class="btn">Previous</button>
+        <span>Page {{ currentPage }} of {{ totalPages }} ({{ totalItems }} events)</span>
+        <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" class="btn">Next</button>
+    </div>
+    
     <!-- Modal -->
     <div v-if="showModal" class="modal-backdrop">
         <div class="modal-card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3 style="margin:0;">{{ modalTitle }}</h3>
+                <h2>{{ modalTitle }}</h2>
                 <button @click="closeModal">X</button>
             </div>
             <div style="margin-top: 10px;">

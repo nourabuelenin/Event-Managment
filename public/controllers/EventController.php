@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../models/EventModel.php';
 require_once __DIR__ . '/../models/VenueModel.php';
+require_once __DIR__ . '/../helpers/functions.php';
 
 class EventController {
     private $db;
@@ -35,8 +36,7 @@ class EventController {
     public function view() {
         requireLogin();
         $id = $_GET['id'] ?? 0;
-        $eventModel = new EventModel($this->db);
-        $event = $eventModel->getEventById($id);
+        $event = $this->eventModel->getEventById($id); // Use $this->eventModel
         if (!$event) {
             setFlashMessage('Event not found.', 'error');
             if ($this->isAjax()) {
@@ -86,8 +86,7 @@ class EventController {
                 'organizer_id' => $_SESSION['user_id']
             ];
 
-            $eventModel = new EventModel($this->db);
-            if ($eventModel->createEvent($data)) {
+            if ($this->eventModel->createEvent($data)) {
                 setFlashMessage('Event created successfully.', 'success');
                 header('Location: ' . BASE_URL . '/events');
                 exit;
@@ -117,8 +116,7 @@ class EventController {
         requireLogin();
         requireRole(['organizer', 'admin']);
         $id = $_GET['id'] ?? 0;
-        $eventModel = new EventModel($this->db);
-        $event = $eventModel->getEventById($id);
+        $event = $this->eventModel->getEventById($id); // Use $this->eventModel
         if (!$event) {
             setFlashMessage('Event not found.', 'error');
             header('Location: ' . BASE_URL . '/events');
@@ -162,8 +160,7 @@ class EventController {
         requireLogin();
         requireRole(['organizer', 'admin']);
         $id = $_GET['id'] ?? 0;
-        $eventModel = new EventModel($this->db);
-        if ($eventModel->deleteEvent($id)) {
+        if ($this->eventModel->deleteEvent($id)) {
             echo json_encode(['status' => 'success']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Failed to delete event']);
@@ -171,18 +168,98 @@ class EventController {
         exit;
     }
 
-    public function apiList() {
-        requireLogin();
-        $events = $this->eventModel->getAllEvents();
-        header('Content-Type: application/json');
-        echo json_encode(['status' => 'success', 'data' => $events]);
-    }
-    
-    public function apiView() {
+    public function register() {
         requireLogin();
         $id = $_GET['id'] ?? 0;
-        $eventModel = new EventModel($this->db);
-        $event = $eventModel->getEventById($id);
+        $event = $this->eventModel->getEventById($id); // Use $this->eventModel
+        if (!$event) {
+            setFlashMessage('Event not found.', 'error');
+            header('Location: ' . BASE_URL . '/events');
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+                setFlashMessage('Invalid CSRF token.', 'error');
+                header('Location: ' . BASE_URL . '/events/register/' . $id);
+                exit;
+            }
+
+            if ($eventModel->registerAttendee($_SESSION['user_id'], $id)) {
+                setFlashMessage('Successfully registered for the event.', 'success');
+                header('Location: ' . BASE_URL . '/events/' . $id);
+                exit;
+            } else {
+                setFlashMessage('Registration failed or you are already registered.', 'error');
+                header('Location: ' . BASE_URL . '/events/register/' . $id);
+                exit;
+            }
+        }
+
+        $this->smarty->assign('event', $event);
+        $this->smarty->assign('flash', getFlashMessage());
+        $this->smarty->display('event_register.tpl');
+    }
+
+public function apiList() {
+    header('Content-Type: application/json');
+    try {
+        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+        $pageSize = isset($_GET['pageSize']) ? max(1, (int)$_GET['pageSize']) : 10;
+        $search = trim($_GET['search'] ?? '');
+        // $name = trim($_GET['name'] ?? '');
+        // $venue_name = trim($_GET['venue_name'] ?? '');
+        // $organizer_name = trim($_GET['organizer_name'] ?? '');
+        // $start_time = trim($_GET['start_time'] ?? '');
+        
+
+        error_log("apiList called: page=$page, pageSize=$pageSize, $search");
+        $result = $this->eventModel->getAllEvents($page, $pageSize, $search);
+        error_log("getAllEvents result: " . print_r($result, true));
+
+        if (isset($result['status']) && $result['status'] === 'error') {
+            http_response_code(500);
+            echo json_encode($result);
+            exit;
+        }
+
+        $response = [
+            'status' => 'success',
+            'data' => $result['data'] ?? [],
+            'pagination' => [
+                'totalItems' => $result['totalItems'] ?? 0,
+                'totalPages' => $result['totalPages'] ?? 1,
+                'offset' => $result['offset'] ?? 0,
+                'currentPage' => $result['currentPage'] ?? $page,
+                'pageSize' => $result['pageSize'] ?? $pageSize
+            ]
+        ];
+
+        $jsonOutput = json_encode($response, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
+        if ($jsonOutput === false) {
+            error_log("json_encode failed: " . json_last_error_msg());
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'JSON encoding failed: ' . json_last_error_msg()]);
+            exit;
+        }
+
+        error_log("Sending response: " . $jsonOutput);
+        echo $jsonOutput;
+    } catch (Exception $e) {
+        error_log('apiList error: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Server error: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
+    
+    public function apiView() {
+        // requireLogin();
+        $id = $_GET['id'] ?? 0;
+        $event = $this->eventModel->getEventById($id); // Use $this->eventModel
         header('Content-Type: application/json');
         if (!$event) {
             echo json_encode(['status' => 'error', 'message' => 'Event not found']);
@@ -236,8 +313,7 @@ class EventController {
         requireLogin();
         requireRole(['organizer', 'admin']);
         $id = $_GET['id'] ?? 0;
-        $eventModel = new EventModel($this->db);
-        $event = $eventModel->getEventById($id);
+        $event = $this->eventModel->getEventById($id); // Use $this->eventModel 
         if (!$event) {
             http_response_code(404);
             header('Content-Type: application/json');
@@ -271,4 +347,37 @@ class EventController {
             echo json_encode(['status' => 'error', 'message' => 'Failed to update event']);
         }        
     }
+
+    public function apiRegister() {
+        requireLogin();
+        requireRole(['attendee']); // Restrict to attendees only
+        $id = $_GET['id'] ?? 0;
+        $event = $this->eventModel->getEventById($id); // Use $this->eventModel
+        if (!$event) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Event not found']);
+            return;
+        }
+
+        if (!isset($_SERVER['HTTP_X_CSRF_TOKEN']) || $_SERVER['HTTP_X_CSRF_TOKEN'] !== $_SESSION['csrf_token']) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Invalid CSRF token']);
+            return;
+        }
+
+        $result = $eventModel->registerAttendee($_SESSION['user_id'], $id);  //eventModel 2
+        header('Content-Type: application/json');
+        if ($result === true) {
+            echo json_encode(['status' => 'success', 'message' => 'Successfully registered for the event']);
+        } elseif ($result === 'already_registered') {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'You are already registered for this event']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Failed to register due to a server error']);
+        }
+    }
+
 }

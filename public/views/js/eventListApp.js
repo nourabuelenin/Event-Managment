@@ -1,9 +1,9 @@
-import { createApp, ref, computed, nextTick } from "/test/public/assets/js/vue.esm-browser.js";
+import { createApp, ref, computed, nextTick, watch } from "/test/public/assets/js/vue.esm-browser.js";
 
 const App = {
   setup() {
     // Reactive state
-    const events = ref(Array.isArray(window.initialEvents) ? window.initialEvents : []);
+    const events = ref([]);
     const venues = ref([]);
     const event = ref({
       id: null,
@@ -15,24 +15,26 @@ const App = {
       organizer_name: '',
       venue_name: ''
     });
-    const searchQuery = ref('');
+    // const searchQuery = ref('');
+    const searchQuery = ref(
+        { name: '', venue_name: '', organizer_name: '', start_time: '' }
+    );
+    const search = ref(true);
     const sortKey = ref('name');
     const sortOrder = ref('asc');
     const isLoading = ref(false);
+    const currentPage = ref(1);
+    const pageSize = ref(10);
+    const totalPages = ref(1);
+    const totalItems = ref(0);
     const showModal = ref(false);
     const modalTitle = ref('');
     const modalMode = ref(''); // 'view', 'create', or 'edit'
     const csrfToken = ref(window.csrfToken || '');
 
-    // Computed property for filtered and sorted events
-    const filteredEvents = computed(() => {
-      const q = searchQuery.value.toLowerCase();
-      const arr = events.value.filter(e =>
-        (e.name || '').toLowerCase().includes(q) ||
-        (e.venue_name || '').toLowerCase().includes(q) ||
-        (e.organizer_name || '').toLowerCase().includes(q)
-      );
-      return arr.sort((a, b) => {
+// Computed property for sorted events (no filtering)
+    const sortedEvents = computed(() => {
+      return events.value.sort((a, b) => {
         const A = (a[sortKey.value] ?? '').toString();
         const B = (b[sortKey.value] ?? '').toString();
         if (A < B) return sortOrder.value === 'asc' ? -1 : 1;
@@ -63,27 +65,82 @@ const App = {
       }
     };
 
-    // Fetch all events
+    // Fetch paginated and searched events
     const fetchEvents = async () => {
-      isLoading.value = true;
-      try {
-        console.log('Fetching events from:', `${window.BASE_URL}/api/events`);
-        const res = await fetch(`${window.BASE_URL}/api/events`, { credentials: 'same-origin' });
-        console.log('Fetch events status:', res.status);
-        const json = await res.json();
-        console.log('Fetch events response:', json);
-        if (json.status === 'success') {
-          events.value = json.data || [];
-        } else {
-          console.error('Fetch events failed:', json.message);
-          alert('Failed to fetch events: ' + (json.message || 'Unknown error'));
+        isLoading.value = true;
+        try {
+            const url = new URL(`${window.BASE_URL}/api/events`);
+            url.searchParams.append('page', currentPage.value);
+            url.searchParams.append('pageSize', pageSize.value);
+            
+            // Add search parameters
+            if (searchQuery.value) {
+                const searchParams = new URLSearchParams(searchQuery.value);    
+                url.searchParams.append('search', searchParams.toString());
+                // url.searchParams.append('name', searchQuery.value.name);
+                // url.searchParams.append('venue_name', searchQuery.value.venue_name);
+                // url.searchParams.append('organizer_name', searchQuery.value.organizer_name);
+                // url.searchParams.append('start_time', searchQuery.value.start_time);
+            }    
+            
+            console.log('Fetching events from:', url.toString());
+            console.log('offset:' + ((currentPage.value - 1) * pageSize.value));
+            const res = await fetch(url, { credentials: 'same-origin' });
+            console.log('Fetch events status:', res.status, 'OK:', res.ok);
+            const text = await res.text(); // Get raw response text
+            console.log('Raw response:', text);
+            let json;
+            try {
+                json = JSON.parse(text);
+            } catch (e) {
+                console.error('JSON parse error:', e, 'Raw response:', text);
+                throw new Error('Invalid response from server');
+            }
+            console.log('Fetch events response:', json);
+            if (json.status === 'success') {
+                events.value = json.data || [];
+                totalItems.value = json.pagination?.totalItems || 0;
+                totalPages.value = json.pagination?.totalPages || 1;
+                currentPage.value = json.pagination?.currentPage || 1;
+            } else {
+                console.error('Fetch events failed:', json.message);
+                alert('Failed to fetch events: ' + (json.message || 'Unknown error'));
+                events.value = [];
+                totalItems.value = 0;
+                totalPages.value = 1;
+            }
+        } catch (e) {
+            console.error('Fetch events error:', e);
+            alert('Network error while fetching events: ' + e.message);
+            events.value = [];
+            totalItems.value = 0;
+            totalPages.value = 1;
+        } finally {
+            isLoading.value = false;
         }
-      } catch (e) {
-        console.error('Fetch events error:', e);
-        alert('Network error while fetching events');
-      } finally {
-        isLoading.value = false;
-      }
+    };
+
+    // Navigate to a specific page
+    const goToPage = (page) => {
+    console.log('Navigating to page:', page);
+    if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page;
+        fetchEvents();
+    }
+    };
+
+    // Watch for search query changes and reset to page 1
+    watch(searchQuery, () => {
+    currentPage.value = 1;
+    fetchEvents();
+    });
+
+    // Reset search query and fetch events
+    const resetSearch = () => {
+        console.log('Resetting search query');
+        searchQuery.value = { name: '', venue_name: '', organizer_name: '', start_time: '' };
+        currentPage.value = 1;  
+        fetchEvents();
     };
 
     // Fetch venues for create/edit form
@@ -343,6 +400,7 @@ const App = {
       venues,
       event,
       searchQuery,
+      search,
       sortKey,
       sortOrder,
       isLoading,
@@ -350,18 +408,24 @@ const App = {
       modalTitle,
       modalMode,
       csrfToken,
-      filteredEvents,
+      sortedEvents,
+      currentPage,
+      pageSize,
+      totalPages,
+      totalItems,
       formatDate,
       toggleSort,
       fetchEvents,
       fetchVenues,
+      resetSearch,
       openView,
       openCreate,
       openEdit,
       submitForm,
       deleteEvent,
       registerEvent,
-      closeModal
+      closeModal,
+      goToPage,
     };
   }
 };

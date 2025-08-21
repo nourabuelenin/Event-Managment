@@ -41,6 +41,37 @@ function getCurrentUser() {
     return false;
 }
 
+    // Parse search parameters
+function parseSearchQuery($query) {
+    $params = [];
+    $conditions = [];
+    $whereClause = '';
+    $db = Database::getInstance(); // Use singleton
+    
+    parse_str($query, $searchArray);
+    error_log("Parsed search parameters: " . print_r($searchArray, true));
+
+    foreach ($searchArray as $key => $value) {
+        if (!empty($value)) {
+            $value = '%' . $db->escape($value) . '%'; // Use the database instance to escape
+            $conditions[] = "$key LIKE ?";
+            $params[] = $value;
+        }
+    }
+
+    // Build WHERE clause
+    if (!empty($conditions)) {
+        $whereClause = "WHERE " . implode(' AND ', $conditions);
+    } else {
+        $whereClause = '';
+    }
+    
+    return [
+        'whereClause' => $whereClause,
+        'params' => $params
+    ];
+}
+
 function setFlashMessage($message, $type = 'success') {
     $_SESSION['flash'] = ['message' => $message, 'type' => $type];
 }
