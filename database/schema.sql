@@ -45,3 +45,9 @@ Create TABLE `event_attendees` (
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`event_id`) REFERENCES `events`(`id`) ON DELETE CASCADE
 );
+
+CREATE VIEW filtered_events AS
+SELECT e.*, v.name AS venue_name, u.username AS organizer_name 
+FROM events e 
+LEFT JOIN venues v ON e.venue_id = v.id 
+LEFT JOIN users u ON e.organizer_id = u.id 

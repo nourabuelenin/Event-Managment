@@ -23,5 +23,6 @@ $smarty = new MySmarty();
 $smarty->assign('base_url', BASE_URL);
 $smarty->assign('assets_url', ASSETS_URL);
 $smarty->assign('views_url', VIEWS_URL);
-$smarty->assign('current_user', getCurrentUser($db));
+$db = Database::getInstance(); // Use singleton
+$smarty->assign('current_user', getCurrentUser());
 $smarty->assign('csrf_token', $_SESSION['csrf_token']);
