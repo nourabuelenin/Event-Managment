@@ -20,6 +20,7 @@ $routes = [
     'events/create'      => ['controller' => 'EventController', 'method' => 'create'],
     'events/update/(\d+)' => ['controller'=>'EventController','method'=>'update','params'=>['id'=>1]],
     'events/delete/(\d+)' => ['controller'=>'EventController','method'=>'delete','params'=>['id'=>1]],
+    'events/register/(\d+)' => ['controller' => 'EventController', 'method' => 'register', 'params' => ['id' => 1]],
 
     // api
     'api/events'         => ['controller' => 'EventController', 'method' => 'apiList'],
@@ -29,6 +30,7 @@ $routes = [
     'api/events/create'  => ['controller' => 'EventController', 'method' => 'apiCreate'],
     'api/events/update/(\d+)'  => ['controller' => 'EventController', 'method' => 'apiUpdate','params'=>['id'=>1]], // ?id=...
     'api/events/delete'  => ['controller' => 'EventController', 'method' => 'apiDelete' ,'params'=>['id'=>1]], // ?id=...
+    'api/events/register/(\d+)' => ['controller' => 'EventController', 'method' => 'apiRegister', 'params' => ['id' => 1]],
 ];
 
 // Resolve path

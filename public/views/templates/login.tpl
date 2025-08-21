@@ -11,9 +11,9 @@
         <span v-if="errors.username" class="error">{{ errors.username }}</span><br>
         <label>Password: <input type="password" v-model="formData.password" name="password"></label>
         <span v-if="errors.password" class="error">{{ errors.password }}</span><br>
+        <p>Don't have an account? <a href="{$base_url}/register">Register</a></p>
         <button type="submit">Login</button>
     </form>
-    <p>Don't have an account? <a href="{$base_url}/register">Register</a></p>
 </div>
 {/block}
 

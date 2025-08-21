@@ -8,7 +8,7 @@
     {if $current_user}
         <p>Hello, {$current_user.username|escape}! Explore or manage events below.</p>
     {else}
-        <p>Welcome! Please <a href="{$base_url}/login">log in</a> or <a href="{$base_url}/register">register</a> to manage events.</p>
+        <p>Please <a href="{$base_url}/login">log in</a> or <a href="{$base_url}/register">register</a> to manage events.</p>
     {/if}
     <h2>Upcoming Events</h2>
     {* {debug} Dump all Smarty variables for debugging *}
@@ -35,14 +35,6 @@
                 <h3 style="margin:0;">{{ modalTitle }}</h3>
                 <button @click="closeModal">X</button>
             </div>
-            {* <div id="event-view-app">
-                <h3>{$event->name|escape}</h3>
-                <p><strong>Description:</strong> {{ $event->description}}{$event->description|escape|nl2br}{else}No description available{/if}</p>
-                <p><strong>Start:</strong> {{ $event->start_time}}{$event->start_time|date_format:"%b %d, %Y %H:%M"}{else}N/A{/if}</p>
-                <p><strong>End:</strong> {{ $event->end_time}}{$event->end_time|date_format:"%b %d, %Y %H:%M"}{else}N/A{/if}</p>
-                <p><strong>Organizer:</strong> {{$event->organizer_name}|escape|default:'N/A'}</p>
-                <p><strong>Venue:</strong> {{ $event->venue_name}}{$event->venue_name|escape}{else}N/A{/if}</p>
-            </div> *}
             <div id="event-view-app">
                 <h3>{{ event.name }}</h3>
                 <p><strong>Description:</strong> {{ event.description}}</p>

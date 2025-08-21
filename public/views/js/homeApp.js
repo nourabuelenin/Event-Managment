@@ -21,7 +21,7 @@ const App = {
     const fetchEvents = async () => {
       isLoading.value = true;
       try {
-        const res = await fetch(`${window.BASE_URL}/api/events`, {
+        const res = await fetch(`${window.BASE_URL}/api/home`, {
           credentials: "same-origin",
         });
         if (!res.ok) {

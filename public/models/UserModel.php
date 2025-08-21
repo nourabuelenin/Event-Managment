@@ -23,6 +23,8 @@ class UserModel {
         $user->username = $data['username'];
         $user->email = $data['email'];
         $user->password = $password = password_hash($data['password'], PASSWORD_DEFAULT);
+        $user->role = $data['role'] ?: 'attendee'; // Default role is attendee
+        $user->created_at = date('Y-m-d H:i:s');
         return $user->Save();; // User registered successfully
     }
 
