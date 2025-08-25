@@ -49,4 +49,22 @@ class UserModel {
         }
         return false; // User not found
     }
+
+    // GET ALL USERS
+    public static function getAllUsers() {
+        $user = new User();
+        return $user->Find('1=1');
+    }
+
+    // GET USERNAME BY ID
+    public static function getUsers($ids){
+        $user = new User();
+        $userMap = [];
+        foreach ($ids as $id) {
+            if ($user->Load('id = ?', [$id])) {
+                $userMap[$user->id] = $user->username;
+            }
+        }   
+        return $userMap;
+    }
 }

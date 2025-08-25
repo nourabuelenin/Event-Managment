@@ -40,42 +40,39 @@ class EventModel {
                 $whereClause = $searchData['whereClause'];
                 $params = $searchData['params'];
             }
+            
+            $event = new Event();
+            $countevents = $event->Find($whereClause , $params);
+            error_log("COUNT WHERE clause: $whereClause and params: " . print_r($params, true));
+            error_log("Events found for count: " . print_r($countevents, true));
 
-            $baseQuery = "SELECT * FROM filtered_events $whereClause";
-            $countQuery = "SELECT COUNT(*) AS total FROM filtered_events $whereClause";
+            $totalItems = count($countevents);
+            error_log("Total items found: $totalItems with WHERE clause: $whereClause and params: " . print_r($params, true));
 
-            error_log("Count query: $countQuery, Params: " . print_r($params, true));
-            $countResult = $this->db->Execute($countQuery, $params);
-            if ($countResult === false) {
-                error_log('Count query failed: ' . $this->db->ErrorMsg());
-                throw new Exception('Failed to count events: ' . $this->db->ErrorMsg());
-            }
-            $totalItems = (int)($countResult->fields['total'] ?? 0);
+            $whereClause .= $whereClause ? " LIMIT ? OFFSET ?" : "1=1 LIMIT ? OFFSET ?";
+            error_log("Final WHERE clause for fetching events: $whereClause with params: " . print_r($params, true));
+            $params[] = $pageSize;
+            $params[] = $offset;
 
-            $query = "$baseQuery ORDER BY start_time DESC LIMIT ? OFFSET ?";
-            $params = array_merge($params, [$pageSize, $offset]);
-            error_log("Events query: $query, Params: " . print_r($params, true));
-            $eventsResult = $this->db->Execute($query, $params);
-            if ($eventsResult === false) {
-                error_log('Events query failed: ' . $this->db->ErrorMsg());
-                throw new Exception('Failed to fetch events: ' . $this->db->ErrorMsg());
-            }
+            $events = $event->Find($whereClause, $params);
 
-            $events = [];
-            while ($row = $eventsResult->FetchRow()) {
-                $events[] = [
-                    'id' => (int)$row['id'],
-                    'name' => $row['name'] ?? '',
-                    'description' => $row['description'] ?? '',
-                    'start_time' => $row['start_time'] ?? '',
-                    'end_time' => $row['end_time'] ?? '',
-                    'venue_id' => $row['venue_id'] ? (int)$row['venue_id'] : null,
-                    'organizer_id' => $row['organizer_id'] ? (int)$row['organizer_id'] : null,
-                    'venue_name' => $row['venue_name'] ?: 'N/A',
-                    'organizer_name' => $row['organizer_name'] ?: 'N/A'
-                ];
+            // Extract unique venue and organizer IDs
+            $arrVenueID =  array_column($events, 'venue_id');
+            $arrOrganizerID =  array_column($events, 'organizer_id');
+
+            $arrVenuesMap =  VenueModel::getVenues($arrVenueID);
+            // var_dump($arrVenuesMap);
+
+            $arrOrganizersMap =  UserModel::getUsers($arrOrganizerID);
+            // var_dump($arrOrganizersMap);
+
+
+            foreach ($events as $e) {
+                $e->venue_name = $arrVenuesMap[$e->venue_id] ?? 'N/A';
+                $e->organizer_name = $arrOrganizersMap[$e->organizer_id] ?? 'N/A';
             }
 
+            error_log("Fetched events: " . print_r($events, true));
             return [
                 'data' => $events,
                 'totalItems' => $totalItems,

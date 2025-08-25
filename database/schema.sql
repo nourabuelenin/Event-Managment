@@ -51,3 +51,57 @@ SELECT e.*, v.name AS venue_name, u.username AS organizer_name
 FROM events e 
 LEFT JOIN venues v ON e.venue_id = v.id 
 LEFT JOIN users u ON e.organizer_id = u.id 
+
+            -- // ----------------------------------------------------------------------------
+            -- // ADOdb Active Record relations
+            -- // ADODB_Active_Record::ClassBelongsTo('Event', 'Venue', 'venue_id', 'id');
+            -- // ADODB_Active_Record::ClassBelongsTo('Event', 'User', 'organizer_id', 'id');
+            -- // $event = new Event();
+            -- // $events = $event->Find('1=1');
+            -- // foreach ($events as $event) {
+            -- //     // error_log("Event loaded with venue: " . print_r($e->Venue, true));
+            -- //     $event->venue_name = $event->Venue ? $event->Venue->name : 'N/A';
+            -- //     $event->organizer_name = $event->User ? $event->User->username : 'N/A';
+            -- //     // $event->save();
+            -- //     error_log("Event after setting venue_name: " . print_r($event, true));
+            -- // }
+            -- // var_dump($events);
+            -- // error_log("Events with relations: " . print_r($events, true));
+
+            -- // ----------------------------------------------------------------------------
+            -- // logic for loading relations manually v2
+            -- // $event = new Event(); 
+            -- // $events = $event->Find('1=1'); 
+            -- // $venues = VenueModel::getAllVenues();
+            -- // $users = UserModel::getAllUsers();
+
+            -- // foreach ($events as $event) {
+            -- //     $event->venue_name = $event->venue_id && isset($venueMap[$event->venue_id]) ? $venueMap[$event->venue_id] : 'N/A';
+            -- //     $event->organizer_name = $event->organizer_id && isset($userMap[$event->organizer_id]) ? $userMap[$event->organizer_id] : 'N/A';
+            -- //     error_log("Event with venue & organizer names: " . print_r($event, true));
+            -- // }
+
+            --  // ----------------------------------------------------------------------------
+            -- // logic for loading relations manually
+            -- // $event = new Event();
+            -- // $events = $event->Find('1=1'); 
+            -- // $venues = VenueModel::getAllVenues();
+            -- // $users = UserModel::getAllUsers();
+
+            -- // $venueMap = [];
+            -- // foreach ($venues as $venue) {
+            -- //     $venueMap[$venue->id] = $venue->name;
+            -- // }
+
+            -- // $userMap = [];
+            -- // foreach ($users as $user) {
+            -- //     $userMap[$user->id] = $user->username;
+            -- // }
+
+            -- // foreach ($events as $event) {
+            -- //     $event->venue_name = $event->venue_id && isset($venueMap[$event->venue_id]) ? $venueMap[$event->venue_id] : 'N/A';
+            -- //     $event->organizer_name = $event->organizer_id && isset($userMap[$event->organizer_id]) ? $userMap[$event->organizer_id] : 'N/A';
+            -- //     error_log("Event with venue & organizer names: " . print_r($event, true));
+            -- // }
+
+            -- // ----------------------------------------------------------------------------

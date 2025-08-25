@@ -41,7 +41,38 @@ function getCurrentUser() {
     return false;
 }
 
-    // Parse search parameters
+// // Parse search parameters
+// function parseSearchQuery($query) {
+//     $params = [];
+//     $conditions = [];
+//     $whereClause = '';
+//     $db = Database::getInstance(); // Use singleton
+    
+//     parse_str($query, $searchArray);
+//     error_log("Parsed search parameters: " . print_r($searchArray, true));
+
+//     foreach ($searchArray as $key => $value) {
+//         if (!empty($value)) {
+//             $value = '%' . $db->escape($value) . '%'; // Use the database instance to escape
+//             $conditions[] = "$key LIKE ?";
+//             $params[] = $value;
+//         }
+//     }
+//     // Build WHERE clause
+//     if (!empty($conditions)) {
+//         $whereClause = "WHERE " . implode(' AND ', $conditions);
+//     } else {
+//         $whereClause = '';
+//     }
+    
+//     return [
+//         'whereClause' => $whereClause,
+//         'params' => $params
+//     ];
+// }
+
+
+// Parse search parameters
 function parseSearchQuery($query) {
     $params = [];
     $conditions = [];
@@ -52,20 +83,38 @@ function parseSearchQuery($query) {
     error_log("Parsed search parameters: " . print_r($searchArray, true));
 
     foreach ($searchArray as $key => $value) {
+    //     if (!empty($value)) {
+    //         $value = '%' . $db->escape($value) . '%'; // Use the database instance to escape
+    //         $conditions[] = "$key LIKE ?";
+    //         $params[] = $value;
+    //     }
         if (!empty($value)) {
-            $value = '%' . $db->escape($value) . '%'; // Use the database instance to escape
-            $conditions[] = "$key LIKE ?";
-            $params[] = $value;
+            if ($key === 'start_time') {
+                $conditions[] = "$key = ?";
+                $params[] = $db->escape($value);
+            } else {
+                $value = '%' . $db->escape($value) . '%'; // Use the database instance to escape
+                if ($key === 'venue_name') {
+                    $conditions[] = "venue_id IN (SELECT id FROM venues WHERE name LIKE ?)";
+                } elseif ($key === 'organizer_name') {
+                    $conditions[] = "organizer_id IN (SELECT id FROM users WHERE username LIKE ?)";
+                } else {
+                    $conditions[] = "$key LIKE ?";
+                }
+                $params[] = $value;
+            }
         }
     }
 
+
     // Build WHERE clause
     if (!empty($conditions)) {
-        $whereClause = "WHERE " . implode(' AND ', $conditions);
+        $whereClause = implode(' AND ', $conditions);
     } else {
-        $whereClause = '';
+        $whereClause = ' 1=1 ';
     }
     
+    error_log("Constructed WHERE clause: $whereClause with params: " . print_r($params, true)); 
     return [
         'whereClause' => $whereClause,
         'params' => $params
